@@ -18,73 +18,83 @@
   <canvas id="canvas"></canvas>
 
   <script>
-    // Check for WebXR API support
-    if ('xr' in navigator) {
-      navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
-        if (supported) {
-          // Initialize AR experience
-          document.getElementById('canvas').addEventListener('click', startAR);
-          console.log('Click to start AR experience.');
-        } else {
-          console.log('AR not supported.');
-        }
-      }).catch((error) => {
-        console.log('Error checking AR support:', error);
-      });
-    } else {
-      console.log('WebXR not supported.');
-    }
+    // Request camera permission and start AR session
+    async function startAR() {
+      try {
+        // Request camera permission
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
 
-    // Start AR session
-    function startAR() {
-      navigator.xr.requestSession('immersive-ar', { requiredFeatures: ['hit-test'] })
-        .then((session) => {
-          // Create an XR reference space using hit-testing
-          session.requestReferenceSpace('viewer').then((referenceSpace) => {
-            // Create a renderer and attach it to the canvas
-            const canvas = document.getElementById('canvas');
-            const renderer = new THREE.WebGLRenderer({ canvas });
-            
-            // Create a three.js scene
-            const scene = new THREE.Scene();
+        // Check for WebXR API support
+        if ('xr' in navigator) {
+          navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
+            if (supported) {
+              // Initialize AR experience
+              document.getElementById('canvas').addEventListener('click', () => {
+                // Start AR session
+                navigator.xr.requestSession('immersive-ar', { requiredFeatures: ['hit-test'], optionalFeatures: ['dom-overlay'] })
+                  .then((session) => {
+                    // Create an XR reference space using hit-testing
+                    session.requestReferenceSpace('viewer').then((referenceSpace) => {
+                      // Create a renderer and attach it to the canvas
+                      const canvas = document.getElementById('canvas');
+                      const renderer = new THREE.WebGLRenderer({ canvas });
+                      
+                      // Create a three.js scene
+                      const scene = new THREE.Scene();
 
-            // Add your AR content to the scene
-            // Example: Add a cube
-            const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
-            const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-            const cube = new THREE.Mesh(geometry, material);
-            scene.add(cube);
+                      // Add your AR content to the scene
+                      // Example: Add a cube
+                      const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+                      const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+                      const cube = new THREE.Mesh(geometry, material);
+                      scene.add(cube);
 
-            // Update AR session
-            session.addEventListener('end', () => {
-              // Clean up when the session ends
-              renderer.dispose();
-              console.log('AR session ended.');
-            });
+                      // Update AR session
+                      session.addEventListener('end', () => {
+                        // Clean up when the session ends
+                        renderer.dispose();
+                        console.log('AR session ended.');
+                      });
 
-            function onXRFrame(time, frame) {
-              const referenceSpace = frame.session.isImmersive ? frame.session.requestReferenceSpace('viewer') : frame.session.requestReferenceSpace('local');
-              const pose = frame.getViewerPose(referenceSpace);
-              if (pose) {
-                // Update AR content position and orientation
-                const xrPose = pose.views[0].transform;
-                const position = xrPose.position;
-                const orientation = xrPose.orientation;
-                cube.position.copy(position);
-                cube.quaternion.copy(orientation);
-              }
-              session.requestAnimationFrame(onXRFrame);
-              renderer.render(scene, camera);
+                      function onXRFrame(time, frame) {
+                        const referenceSpace = frame.session.isImmersive ? frame.session.requestReferenceSpace('viewer') : frame.session.requestReferenceSpace('local');
+                        const pose = frame.getViewerPose(referenceSpace);
+                        if (pose) {
+                          // Update AR content position and orientation
+                          const xrPose = pose.views[0].transform;
+                          const position = xrPose.position;
+                          const orientation = xrPose.orientation;
+                          cube.position.copy(position);
+                          cube.quaternion.copy(orientation);
+                        }
+                        session.requestAnimationFrame(onXRFrame);
+                        renderer.render(scene, camera);
+                      }
+
+                      session.updateRenderState({ baseLayer: new XRWebGLLayer(session, renderer) });
+                      session.requestAnimationFrame(onXRFrame);
+                    });
+                  })
+                  .catch((error) => {
+                    console.log('Error starting AR session:', error);
+                  });
+              });
+              console.log('Click to start AR experience.');
+            } else {
+              console.log('AR not supported.');
             }
-
-            session.updateRenderState({ baseLayer: new XRWebGLLayer(session, renderer) });
-            session.requestAnimationFrame(onXRFrame);
+          }).catch((error) => {
+            console.log('Error checking AR support:', error);
           });
-        })
-        .catch((error) => {
-          console.log('Error starting AR session:', error);
-        });
+        } else {
+          console.log('WebXR not supported.');
+        }
+      } catch (error) {
+        console.log('Error accessing camera:', error);
+      }
     }
+
+    startAR();
   </script>
 </body>
 </html>
