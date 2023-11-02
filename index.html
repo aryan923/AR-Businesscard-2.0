@@ -1,5 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
+  ...
+// Example: Add a cube
+console.log('Creating cube');
+const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+const cube = new THREE.Mesh(geometry, material);
+scene.add(cube);
+console.log('Cube created');
+
+...
+
+function renderFrame(time, frame) {
+  console.log('Rendering frame');
+  // Rest of the code...
+}
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
