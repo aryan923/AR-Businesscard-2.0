@@ -1,41 +1,90 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <style>
-        /* Style for the overlaid image */
-        .overlay-image {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: none; /* Initially hidden */
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AR Experience</title>
+  <style>
+    html, body, canvas {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
 </head>
 <body>
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
-        <a-marker type="pattern">
-            <img src="Markers/card_mark.png"> <!-- Your custom marker image -->
-        </a-marker>
-    </a-scene>
+  <canvas id="canvas"></canvas>
 
-    <!-- The overlay image that will be displayed when the marker is recognized -->
-    <img class="overlay-image" src="images/Red Black Creative Modern Business Card.png">
+  <script>
+    // Check for WebXR API support
+    if ('xr' in navigator) {
+      navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
+        if (supported) {
+          // Initialize AR experience
+          document.getElementById('canvas').addEventListener('click', startAR);
+          console.log('Click to start AR experience.');
+        } else {
+          console.log('AR not supported.');
+        }
+      }).catch((error) => {
+        console.log('Error checking AR support:', error);
+      });
+    } else {
+      console.log('WebXR not supported.');
+    }
 
-    <script>
-        // JavaScript code to show/hide the overlay image when the marker is recognized
-        const marker = document.querySelector('a-marker');
-        const overlayImage = document.querySelector('.overlay-image');
+    // Start AR session
+    function startAR() {
+      navigator.xr.requestSession('immersive-ar', { requiredFeatures: ['hit-test'] })
+        .then((session) => {
+          // Create an XR reference space using hit-testing
+          session.requestReferenceSpace('viewer').then((referenceSpace) => {
+            // Create a renderer and attach it to the canvas
+            const canvas = document.getElementById('canvas');
+            const renderer = new THREE.WebGLRenderer({ canvas });
+            
+            // Create a three.js scene
+            const scene = new THREE.Scene();
 
-        marker.addEventListener('markerFound', () => {
-            overlayImage.style.display = 'block'; // Show the overlay image
+            // Add your AR content to the scene
+            // Example: Add a cube
+            const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+            const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+            const cube = new THREE.Mesh(geometry, material);
+            scene.add(cube);
+
+            // Update AR session
+            session.addEventListener('end', () => {
+              // Clean up when the session ends
+              renderer.dispose();
+              console.log('AR session ended.');
+            });
+
+            function onXRFrame(time, frame) {
+              const referenceSpace = frame.session.isImmersive ? frame.session.requestReferenceSpace('viewer') : frame.session.requestReferenceSpace('local');
+              const pose = frame.getViewerPose(referenceSpace);
+              if (pose) {
+                // Update AR content position and orientation
+                const xrPose = pose.views[0].transform;
+                const position = xrPose.position;
+                const orientation = xrPose.orientation;
+                cube.position.copy(position);
+                cube.quaternion.copy(orientation);
+              }
+              session.requestAnimationFrame(onXRFrame);
+              renderer.render(scene, camera);
+            }
+
+            session.updateRenderState({ baseLayer: new XRWebGLLayer(session, renderer) });
+            session.requestAnimationFrame(onXRFrame);
+          });
+        })
+        .catch((error) => {
+          console.log('Error starting AR session:', error);
         });
-
-        marker.addEventListener('markerLost', () => {
-            overlayImage.style.display = 'none'; // Hide the overlay image
-        });
-    </script>
+    }
+  </script>
 </body>
 </html>
