@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script> <!-- Include A-Frame library -->
+    <style>
+        /* Style for the overlaid image */
+        .overlay-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none; /* Initially hidden */
+        }
+    </style>
+</head>
+<body>
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
+        <a-marker type="pattern">
+            <img src="Markers/card_mark.png" <!-- Your custom marker image -->
+        </a-marker>
+    </a-scene>
+
+    <!-- The overlay image that will be displayed when the marker is recognized -->
+    <img class="overlay-image" src="images/Red Black Creative Modern Business Card.png">
+
+    <script>
+        // JavaScript code to show/hide the overlay image when the marker is recognized
+        const marker = document.querySelector('a-marker');
+        const overlayImage = document.querySelector('.overlay-image');
+
+        marker.addEventListener('markerFound', () => {
+            overlayImage.style.display = 'block'; // Show the overlay image
+        });
+
+        marker.addEventListener('markerLost', () => {
+            overlayImage.style.display = 'none'; // Hide the overlay image
+        });
+    </script>
+</body>
+</html>
