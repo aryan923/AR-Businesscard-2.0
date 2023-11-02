@@ -10,56 +10,28 @@
   </style>
 </head>
 <body>
-  <a-scene embedded arjs="detectionMode: mono_and_matrix;">
+  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
     <a-assets>
       <img id="marker-image" src="Markers/card_mark.png">
       <img id="overlay-image" src="images/Red Black Creative Modern Business Card.png">
     </a-assets>
   
-    <a-marker preset="custom" type="pattern" url="Markers/card_mark.png">
-      <a-image src="#overlay-image" width="2" height="2" position="0 0 0"></a-image>
-    </a-marker>
-  
-    <a-entity
-      geometry="primitive: box; height: 0.1; width: 0.1; depth: 0.1"
-      material="color: green"
-      position="0 0 0">
-    </a-entity>
+    <a-marker-camera preset="custom" type="pattern" url="Markers/card_mark.png">
+  <a-image src="#overlay-image" scale="1 1 1"></a-image>
+</a-marker-camera>
+
   </a-scene>
   
   <script src="https://aframe.io/releases/1.0.4/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mediapipe/dist/mediapipe.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ar.js"></script>
   <script>
-    // Setup AR.js and start the AR session
-    AFRAME.registerComponent('arjs-camera-setup', {
-      init() {
-        const video = document.querySelector('#ar-video');
-        navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: 'environment',
-          },
-        })
-          .then((stream) => {
-            video.srcObject = stream;
-            video.onloadedmetadata = () => {
-              video.play();
-            };
-          })
-          .catch((error) => {
-            console.error('Failed to access the camera:', error);
-          });
-      },
-    });
-
-    // Start the AR session
     AFRAME.registerComponent('start-ar', {
-      init() {
-        this.el.sceneEl.addEventListener('loaded', () => {
-          const arToolkitContext = this.el.sceneEl.systems['arjs'].context;
-          arToolkitContext.arController.loadCamera();
-          arToolkitContext.getUserMedia();
+      init: function () {
+        var scene = document.querySelector('a-scene');
+        scene.addEventListener('loaded', () => {
+          scene.querySelector('[arjs]').setAttribute('debugUIEnabled', false);
         });
-      },
+      }
     });
   </script>
 </body>
