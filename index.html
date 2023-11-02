@@ -17,6 +17,7 @@
 <body>
   <canvas id="canvas"></canvas>
 
+  <script src="https://unpkg.com/three@0.134.0/build/three.js"></script>
   <script>
     // Request camera permission and start AR session
     async function startAR() {
@@ -33,47 +34,46 @@
                 // Start AR session
                 navigator.xr.requestSession('immersive-ar', { requiredFeatures: ['hit-test'], optionalFeatures: ['dom-overlay'] })
                   .then((session) => {
-                    // Create an XR reference space using hit-testing
-                    session.requestReferenceSpace('viewer').then((referenceSpace) => {
-                      // Create a renderer and attach it to the canvas
-                      const canvas = document.getElementById('canvas');
-                      const renderer = new THREE.WebGLRenderer({ canvas });
-                      
-                      // Create a three.js scene
-                      const scene = new THREE.Scene();
+                    // Create a three.js scene
+                    const scene = new THREE.Scene();
 
-                      // Add your AR content to the scene
-                      // Example: Add a cube
-                      const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
-                      const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-                      const cube = new THREE.Mesh(geometry, material);
-                      scene.add(cube);
+                    // Add your AR content to the scene
+                    // Example: Add a cube
+                    const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+                    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+                    const cube = new THREE.Mesh(geometry, material);
+                    scene.add(cube);
 
-                      // Update AR session
-                      session.addEventListener('end', () => {
-                        // Clean up when the session ends
-                        renderer.dispose();
-                        console.log('AR session ended.');
-                      });
+                    // Create a renderer and attach it to the canvas
+                    const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas') });
+                    renderer.setSize(window.innerWidth, window.innerHeight);
 
-                      function onXRFrame(time, frame) {
-                        const referenceSpace = frame.session.isImmersive ? frame.session.requestReferenceSpace('viewer') : frame.session.requestReferenceSpace('local');
-                        const pose = frame.getViewerPose(referenceSpace);
-                        if (pose) {
-                          // Update AR content position and orientation
-                          const xrPose = pose.views[0].transform;
-                          const position = xrPose.position;
-                          const orientation = xrPose.orientation;
-                          cube.position.copy(position);
-                          cube.quaternion.copy(orientation);
-                        }
-                        session.requestAnimationFrame(onXRFrame);
-                        renderer.render(scene, camera);
-                      }
-
-                      session.updateRenderState({ baseLayer: new XRWebGLLayer(session, renderer) });
-                      session.requestAnimationFrame(onXRFrame);
+                    // Set up AR session
+                    session.addEventListener('end', () => {
+                      // Clean up when the session ends
+                      renderer.dispose();
+                      console.log('AR session ended.');
                     });
+                    
+                    function renderFrame(time, frame) {
+                      const referenceSpace = frame.session.isImmersive ? frame.session.requestReferenceSpace('viewer') : frame.session.requestReferenceSpace('local');
+                      const pose = frame.getViewerPose(referenceSpace);
+                      if (pose) {
+                        // Update AR content position and orientation
+                        const xrPose = pose.views[0].transform;
+                        const position = new THREE.Vector3();
+                        position.setFromMatrixPosition(xrPose);
+                        const orientation = new THREE.Quaternion();
+                        orientation.setFromRotationMatrix(xrPose);
+                        cube.position.copy(position);
+                        cube.quaternion.copy(orientation);
+                      }
+                      renderer.render(scene, pose.views[0].projectionMatrix);
+                      frame.session.requestAnimationFrame(renderFrame);
+                    }
+
+                    session.updateRenderState({ baseLayer: new XRWebGLLayer(session, renderer) });
+                    session.requestAnimationFrame(renderFrame);
                   })
                   .catch((error) => {
                     console.log('Error starting AR session:', error);
